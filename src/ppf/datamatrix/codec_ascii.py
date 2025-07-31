@@ -23,33 +23,42 @@ __all__ = []
 
 import codecs
 
-DIGITS = '0123456789'
-
 
 def encode(msg):
     """Encode to datamatrix.ascii."""
     enc = []
+    length = len(msg)
     i = 0
-    while i < len(msg):
-        if msg[i] in DIGITS and i + 1 < len(msg) and msg[i + 1] in DIGITS:
+    while i < length:
+        c = msg[i]
+        if c.isdigit() and i + 1 < length and msg[i + 1].isdigit():
             enc.append(130 + int(msg[i:i + 2]))
             i += 1
+        elif ord(c) > 127:
+            enc.append(235)
+            enc.append((ord(c) - 127) & 255) 
         else:
-            enc.append(list(msg[i].encode('ascii'))[0] + 1)
+            enc.append( ord(c) + 1)
         i += 1
-
     return bytes(enc), len(enc)
 
 
 def decode(code):
     """Decode datamatrix.ascii-encoded message."""
     msg = ''
-    for c in code:
+    length = len(code)
+    i = 0
+    while i < length:
+        c = code[i]
         if 130 <= c and c < 230:
             msg += f'{c-130:02d}'
+        elif c == 235:
+            i += 1
+            c = code[i]
+            msg += chr(c+127)
         else:
-            msg += bytes([c - 1]).decode('ascii')
-
+            msg += chr(c-1)
+        i += 1
     return msg, len(msg)
 
 
